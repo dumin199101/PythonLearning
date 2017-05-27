@@ -14,4 +14,20 @@ else:
 #删除
 d.pop('Bob')
 print d
-#set：一组key的集合，输入参数为一个list
+#set：一组key的无序集合，输入参数为一个list:重复的项会被过滤
+s = set(['Hello','World','Python','Hello','World'])
+print s
+#添加元素到set
+s.add('Java')
+print s
+#删除元素
+s.remove('Python')
+print s
+#利用set取交集并集
+s1 = set([1, 2, 3])
+s2 = set([2, 3, 4])
+print "交集：",s1&s2
+print "并集：",s1|s2
+
+
+

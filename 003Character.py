@@ -18,5 +18,11 @@ print len('\xe4\xb8\xad\xe5\x9b\xbd') #6
 # %s字符串  %d:整数 %f:浮点 %02d：整数不够2位，前边补0 %2d:整数不够2位，前边补空格 %.2f:保留小数点后两位
 # PHP中可以用%d$来指定第几个参数echo sprintf('My name is %s,My age is %d,I have %2$d brothers','dumin',22);
 print "Hello %s,I\'m a Student,My name is %s,My age is %d,My weight is %.2f kg,My ID is %010d" %('Teacher','Dumin',25,55.5,10)
+print "##################################"
+#unicode编码跟二进制编码（UTF-8）之间的相互转换：\u \x
+print u'中国'
+print u'中国'.encode('utf-8') #以utf-8进行编码操作
+# print u'中国'.encode('gbk') 乱码
+print '\xd6\xd0\xb9\xfa'.decode('gbk') #以gbk进行解码操作
 
 

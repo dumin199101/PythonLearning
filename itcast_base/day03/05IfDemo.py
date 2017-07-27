@@ -17,3 +17,10 @@ if not d:
 
 if a or d:
     print u"一真则为真"
+
+if a>90:
+    print "A"
+elif a>80:
+    print "B"
+else:
+    print "C"

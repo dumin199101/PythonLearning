@@ -43,3 +43,13 @@ print u"通过remove方式删除："
 movie_list.remove('变形金刚')
 for temp in movie_list:
     print temp.decode('utf-8')
+
+schoolName = [
+    ['北京大学','清华大学'],
+    ['天津大学','南开大学'],
+    ['重庆大学','西南大学','四川大学']
+]
+
+for i,v in enumerate(name_list):
+    print i,v
+

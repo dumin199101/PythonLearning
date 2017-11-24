@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # _*_ coding=utf-8 _*_
+#列表
 classmates = ['Michael', 'Bob', 'Tracy']
 print(len(classmates))
 print(classmates[0])
@@ -12,7 +13,7 @@ classmates.pop()
 print(classmates)
 classmates[1] = 'HH'
 print(classmates)
-
+#元组
 classmates = ('Michael', 'Bob', 'Tracy',['HH','CC'])
 print(classmates)
 classmates[3][0] = 'BB'

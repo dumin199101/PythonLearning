@@ -1,5 +1,5 @@
 #注意模式选择：r+:覆盖写 w+:清空写 a+:追加写
-f = open("001.py","r",encoding='utf-8')
+f = open("009给Python程序传递参数.py","r",encoding='utf-8')
 f1 = open("demo1.py","w+",encoding="utf-8")
 while True:
     content = f.read(50)

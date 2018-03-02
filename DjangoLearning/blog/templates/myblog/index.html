@@ -8,7 +8,7 @@
 <b>Hello Python</b>
 <ul>
     {%for book in list%}
-    <li>{{book.btitle}}</li>
+    <li><a href="{{book.id}}">{{book.btitle}}</a></li>
     {%endfor%}
 </ul>
 </body>

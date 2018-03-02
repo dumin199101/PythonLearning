@@ -8,3 +8,8 @@ def index(request):
 def blog(request):
     book_list = BookInfo.objects.all()
     return render(request,'myblog/index.html',{'list':book_list})
+
+def show(request,id):
+    bookinfo = BookInfo.objects.get(pk=id)
+    hero_list = bookinfo.heroinfo_set.all()
+    return render(request, 'myblog/show.html', {'list': hero_list})

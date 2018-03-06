@@ -36,6 +36,9 @@ class BookInfo(models.Model):
         b.isDelete = 1
         return b
 
+    def __str__(self):
+        return self.btitle
+
 
 
 class HeroInfo(models.Model):
@@ -44,3 +47,6 @@ class HeroInfo(models.Model):
     hcontent = models.TextField()
     isDelete = models.BooleanField(default=False)
     hbook = models.ForeignKey(BookInfo,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.hname

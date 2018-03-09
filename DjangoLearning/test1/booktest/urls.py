@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+app_name = 'booktest'
+
 urlpatterns = [
     path('getTest1',views.getTest1),
     path('getTest2',views.getTest2),
@@ -15,4 +17,10 @@ urlpatterns = [
     path('logout',views.logout),
     path('session1',views.session1),
     path('session_handle',views.session_handle),
+    path('showName',views.showName),
+    path('index',views.index),
+    path('show/<int:id>',views.show,name='show'),
+    path('extendTest',views.extendTest),
+    path('csrf1',views.csrf1),
+    path('csrf2',views.csrf2)
 ]

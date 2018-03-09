@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<a href="{%url 'bktest:show' '123' %}">反向解析自动生成链接</a>
+{#这是单行注释#}
+{%comment%}
+这是多行注释
+{%endcomment%}
+<ul>
+    {%for hero in list%}
+       {%if forloop.counter|divisibleby:"2"%}
+        <li style="color:red">{{forloop.counter}}--{{hero.hname|join:"&&&"}}</li>
+       {%else%}
+        <li style="color:blue">{{forloop.counter}}--{{hero.hname}}</li>
+       {%endif%}
+    {%empty%}
+        <li>什么也没找到</li>
+    {%endfor%}
+</ul>
+</body>
+</html>

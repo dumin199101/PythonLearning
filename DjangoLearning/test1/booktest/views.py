@@ -1,6 +1,7 @@
 # coding=utf-8
 from django.shortcuts import render
 from django.http import HttpResponse,HttpResponseRedirect
+from .models import HeroInfo,BookInfo
 
 # Create your views here.
 def getTest1(request):
@@ -65,3 +66,28 @@ def session_handle(request):
 def logout(request):
     del request.session['uname']
     return HttpResponseRedirect('/booktest/login')
+
+def showName(request):
+    hero = HeroInfo.objects.get(pk=1)
+    context = {'hero':hero}
+    return render(request,'booktest/showName.html',context)
+
+def index(request):
+    list = HeroInfo.objects.filter(isDelete=0)
+    return render(request,'booktest/index.html',{'list':list})
+
+# 反向解析
+def show(request,id):
+    return render(request,'booktest/show.html',{'id':id})
+
+#模板继承
+def extendTest(request):
+    return render(request,'booktest/extendTest.html')
+
+#跨站脚本攻击
+def csrf1(request):
+    return render(request,'booktest/csrf.html')
+
+def csrf2(request):
+    name = request.POST.get('name')
+    return HttpResponse(name)

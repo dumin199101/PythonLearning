@@ -50,3 +50,6 @@ class HeroInfo(models.Model):
 
     def __str__(self):
         return self.hname
+
+    def showName(self):
+        return self.hname

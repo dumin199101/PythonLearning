@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path,re_path
 from . import views
 
 app_name = 'booktest'
@@ -22,5 +22,10 @@ urlpatterns = [
     path('show/<int:id>',views.show,name='show'),
     path('extendTest',views.extendTest),
     path('csrf1',views.csrf1),
-    path('csrf2',views.csrf2)
+    path('csrf2',views.csrf2),
+    path('staticTest',views.staticTest),
+    path('exception',views.excetion),
+    path('uploadImg',views.uploadImg),
+    path('uploadImgHandle',views.uploadImgHandle),
+    re_path('pageTest/(?P<page>\d*)',views.pageTest),
 ]

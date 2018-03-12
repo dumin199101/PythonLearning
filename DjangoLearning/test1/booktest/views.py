@@ -2,6 +2,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse,HttpResponseRedirect
 from .models import HeroInfo,BookInfo
+from django.conf import settings
+from django.core.paginator import *
+import os
 
 # Create your views here.
 def getTest1(request):
@@ -91,3 +94,36 @@ def csrf1(request):
 def csrf2(request):
     name = request.POST.get('name')
     return HttpResponse(name)
+
+#静态文件
+def staticTest(request):
+    return render(request,'booktest/staticTest.html')
+
+#中间件
+def excetion(request):
+    a = int('abc') #此处出错
+    return HttpResponse('Hello World')
+
+#上传文件
+def uploadImg(request):
+    return render(request,'booktest/uploadImg.html')
+
+def uploadImgHandle(request):
+    photo = request.FILES['photo']
+    #确定保存路径
+    photoName = os.path.join(settings.MEDIA_ROOT,photo.name)
+    with open(photoName,"wb") as pic:
+        for c in photo.chunks():
+            pic.write(c)
+    return HttpResponse("上传成功")
+
+#分页
+def pageTest(request,page):
+    if page=='':
+        page = 1
+    list = HeroInfo.objects.all()
+    #将集合进行分页处理
+    paginator = Paginator(list,3)
+    #得到某页的数据
+    page = paginator.page(page)
+    return render(request,'booktest/pageTest.html',{'page':page})

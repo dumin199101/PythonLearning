@@ -5,6 +5,9 @@ from .models import HeroInfo,BookInfo
 from django.conf import settings
 from django.core.paginator import *
 import os
+from .task import *
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 
 # Create your views here.
 def getTest1(request):
@@ -127,3 +130,27 @@ def pageTest(request,page):
     #得到某页的数据
     page = paginator.page(page)
     return render(request,'booktest/pageTest.html',{'page':page})
+
+# celery实现异步
+def celeryTest(request):
+    task.delay()
+    return HttpResponse("OK")
+
+# 缓存视图测试
+@cache_page(300)
+def cacheViewTest(request):
+    return HttpResponse("Hello2")
+
+# 缓存模板
+def cacheTemplateTest(request):
+    return render(request,'booktest/cacheTemplateTest.html')
+
+# 缓存数据
+def cacheDataTest(request):
+    cache.set("name","lieyan",15)
+    name = cache.get("name")
+    return HttpResponse(name)
+
+# 富文本编辑器
+def editor(request):
+    return render(request,"booktest/editor.html")

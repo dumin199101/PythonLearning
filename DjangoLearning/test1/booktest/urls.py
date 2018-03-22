@@ -27,5 +27,10 @@ urlpatterns = [
     path('exception',views.excetion),
     path('uploadImg',views.uploadImg),
     path('uploadImgHandle',views.uploadImgHandle),
+    path('celeryTest',views.celeryTest),
+    path('cacheViewTest',views.cacheViewTest),
+    path('cacheTemplateTest',views.cacheTemplateTest),
+    path('cacheDataTest',views.cacheDataTest),
+    path('editor',views.editor),
     re_path('pageTest/(?P<page>\d*)',views.pageTest),
 ]

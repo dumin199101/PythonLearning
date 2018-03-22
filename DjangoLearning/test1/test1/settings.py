@@ -1,3 +1,8 @@
+# coding=utf-8
+import os,django
+
+
+
 """
 Django settings for test1 project.
 
@@ -37,7 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'booktest'
+    'booktest',
+    'djcelery',
+    'tinymce'
 ]
 
 MIDDLEWARE = [
@@ -130,10 +137,35 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
-STATIC_URL = '/abc/'
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR,'static')
 ]
 
 MEDIA_ROOT = os.path.join(BASE_DIR,'static/media')
+
+# 任务调度配置
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "booktest.settings")
+django.setup()
+
+import djcelery
+djcelery.setup_loader()
+BROKER_URL = 'redis://192.168.226.128:6379/0'
+CELERY_IMPORTS = ('booktest.task')
+
+#缓存配置
+CACHES = {
+    'default':{
+        'BACKEND':'redis_cache.cache.RedisCache',
+        'LOCATION':"redis://192.168.226.128:6379/0",
+        'TIMEOUT':60 #None 永不失效 0 立即失效
+    }
+}
+
+#初始化admin后台tinymce配置
+TINYMCE_DEFAULT_CONFIG = {
+    'theme':'advanced',
+    'width': 600,
+    'height': 400
+}

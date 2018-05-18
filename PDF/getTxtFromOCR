@@ -1,0 +1,475 @@
+# coding=utf-8
+
+import glob
+import os
+import shutil
+import re
+import sys
+from pyPdf import PdfFileWriter, PdfFileReader
+
+FILE_TXT_EXTENSION = ".txt"
+ROOTDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+XPDFDIR = ROOTDIR + '\\xpdf'
+EXTRACT_TITLE_PDF_DIR = ROOTDIR + "\\extractTitlePDF\\"
+EXTRACT_MONTH_PDF_DIR = ROOTDIR + "\\extractMonthPDF\\"
+PDFDIR = ROOTDIR + "\\PDF\\"
+SWFDIR = ROOTDIR + "\\SWF\\"
+JPGDIR = ROOTDIR + "\\JPG\\"
+
+
+def getAllTxtFiles(path, destpath):
+    """
+    提取所有的txt文本,并将原来的GB2312编码转换为UTF-8编码
+    :return:
+    """
+    txt_file_list = glob.glob(path)
+    for file in txt_file_list:
+        (filepath, filename) = os.path.split(file)
+        end_index = filename.find("_")
+        foldername = filename[:end_index]
+        destfolder = os.path.join(destpath, foldername.decode("gbk"))
+        if not os.path.exists(destfolder):
+            os.makedirs(destfolder)
+        new_filename = filename[filename.find("_") + 1:filename.find(".")] + FILE_TXT_EXTENSION
+        destfile = os.path.join(destfolder, new_filename)
+        # shutil.copy(file,destfile)
+        # with open(file,"r") as f1,open(destfile,"w") as f2:
+        #     shutil.copyfileobj(f1,f2)
+        #     print destfile+" Copy Finished ..."
+        with open(file, "r") as f1, open(destfile, "w") as f2:
+            str = f1.read().decode("gb2312")
+            f2.write(str.encode("utf-8"))
+            print destfile + " Copy Finished ..."
+
+
+def write_mapping_log(logname, content):
+    """
+    生成mapping日志文件
+    :return:
+    """
+    with open(logname, "a+") as f1:
+        f1.write(content.encode("utf-8"))
+
+
+def write_error_log(logname, content):
+    """
+    生成errorlog便于纠错
+    :param logname:
+    :param content:
+    :return:
+    """
+    with open(logname, "a+") as f1:
+        f1.write(content.encode("utf-8"))
+
+
+def del_blank_char(str):
+    """
+    去除字符串中的空白跟换行符
+    :param str:
+    :return:
+    """
+    rep = re.compile(r'(\n|\t)')
+    (fstr, count) = rep.subn('', str)
+    return fstr
+
+
+def extract_title_page_from_txt(bookid, page, content):
+    """
+    从txt中拆分title,获取页码偏移
+    :return:
+    """
+    key = '[纲文]'
+    while True:
+        if content.find(key) < 0:
+            break
+        item = content[content.index(key) + len(key):]
+        try:
+            if item.find('。') < 0:
+                item = None
+            else:
+                item = del_blank_char(item[:item.index('。')]).replace(' ', '')
+        except:
+            # print "数据拆分错误：BookID:"+bookid+"\tPage:"+str(page)
+            write_error_log("Extract_title_Error.txt", "数据拆分错误：BookID:" + bookid + "\tPage:" + str(page) + "\n")
+        # 通过截取的方式一直往下读取内容
+        content = content[content.index(key) + len(key):]
+        if item is None:
+            continue
+        write_mapping_log("Book_Title_Page_Mapping.txt", bookid + "\t" + item + "\t" + str(page) + "\n")
+
+
+def extract_title_and_quotation_page_from_txt(bookid, page, content):
+    """
+    从txt中拆分title and  quotation,获取页码偏移
+    :return:
+    """
+    key = '[纲文]'
+    rep = re.compile(r'\[文献(.*)\]')
+    while True:
+        if content.find(key) < 0 and rep.search(content) is None:
+            break
+        if content.find(key) > -1:
+            item = content[content.index(key) + len(key):]
+        elif rep.search(content) is not None:
+            s_flag = rep.search(content).group()
+            item = content[content.index(s_flag) + len(s_flag):]
+        try:
+            if content.find(key) > -1:
+                if item.find('。') < 0:
+                    item = None
+                else:
+                    item = del_blank_char(item[:item.index('。')]).replace(' ', '')
+            elif rep.search(content) is not None:
+                # 判断逻辑待定:1.拆分文本有明确的分隔符 2.存在文献索引目录，找编辑根据它整理好分隔表格（采用第二种）
+                pass
+        except:
+            print "数据拆分错误：BookID:" + bookid + "\tPage:" + str(page)
+            # write_error_log("Extract_title_quotation_Error.txt", "数据拆分错误：BookID:" + bookid + "\tPage:" + str(page) + "\n")
+        # 通过截取的方式一直往下读取内容
+        if content.find(key) > -1:
+            content = content[content.index(key) + len(key):]
+        elif rep.search(content) is not None:
+            s_flag = rep.search(content).group()
+            item = content[content.index(s_flag) + len(s_flag):]
+        if item is None:
+            continue
+            # write_mapping_log("Book_Title_Quotation_Page_Mapping.txt", bookid + "\t" + item + "\t" + str(page) + "\n")
+            # print bookid + "\t" + item + "\t" + str(page)
+
+
+def get_single_txt_item(txtpath, flag=1):
+    """
+    获取单文件的item
+    :param txtpath:
+    :param flag: 1 默认提取title，2 提取title跟quotation
+    :return:
+    """
+    file = open(txtpath, "r")
+    content = file.read()
+    file.close()
+    (filepath, filename) = os.path.split(txtpath)
+    bookid = filepath[filepath.rfind("/") + 1:]
+    (fname, ext) = os.path.splitext(txtpath)
+    page = int(fname[fname.rfind("/") + 1:])
+    if flag == 1:
+        extract_title_page_from_txt(bookid, page, content)
+    elif flag == 2:
+        extract_title_and_quotation_page_from_txt(bookid, page, content)
+    del content
+
+
+def getBookID_Title_Page_Mapping(txtpath):
+    """
+    获取图书ID+Title+页码的映射文件
+    :return:
+    """
+    if os.path.isfile(txtpath):
+        """
+        单文件做测试用....
+       """
+        file = open(txtpath, "r")
+        content = file.read()
+        file.close()
+        (filepath, filename) = os.path.split(txtpath)
+        bookid = filepath[filepath.rfind("/") + 1:]
+        (fname, ext) = os.path.splitext(txtpath)
+        page = int(fname[fname.rfind("/") + 1:])
+        extract_title_page_from_txt(bookid, page, content)
+        del content
+    else:
+        """
+        遍历下目录下的文件，批量提取
+       """
+        for file in os.listdir(txtpath):
+            get_single_txt_item(os.path.join(txtpath.decode("gbk"), file).replace("\\", "/"))
+            # get_single_txt_item(os.path.join(txtpath, file).replace("\\", "/"), 2)
+            print file + " item数据提取成功"
+
+
+def GetPdfpages(filename):
+    """
+    获取PDF文件的页码数
+    :param filename:
+    :return:
+    """
+    infofile = sys.argv[0][0:sys.argv[0].rfind('\\') + 1] + 'info.txt'
+    os.chdir(XPDFDIR)
+    os.system('pdfinfo.exe -box \"' + filename + '\" >\"' + infofile + '\"')
+    fp = open(infofile, 'r+')
+    while True:
+        tempstr = fp.readline()
+        if tempstr.find('Pages') > -1:
+            pages = int(tempstr[tempstr.index(':') + 1:].strip())
+            break
+    fp.close()
+    os.system("del " + infofile)
+    os.chdir(ROOTDIR)
+    return pages
+
+
+def genfile(srcfile, desfile, startpage, endpage):
+    """
+    根据startpage跟endpage做pdf文件切分
+    :param srcfile:
+    :param desfile:
+    :param startpage:
+    :param endpage:
+    :return:
+    """
+    if endpage < 1:
+        endpage = GetPdfpages(srcfile)
+    output = PdfFileWriter()
+    src = PdfFileReader(file(srcfile, "rb"))
+    (filepath, filename) = os.path.split(desfile)
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+    des = file(desfile, "wb")
+    for i in range(startpage - 1, endpage):
+        output.addPage(src.getPage(i))
+    output.write(des)
+    des.close()
+    del src
+    del des
+    (filepath, filename) = os.path.split(desfile)
+    print filename.decode('gbk').encode('utf-8') + " Generate Successfully..."
+
+
+def compute_start_end_mapping(txtpath):
+    """
+    根据获得的book_title_page_mapping.txt获得title的start跟end页码
+    :param txtpath:
+    :return:
+    """
+    if not os.path.exists(EXTRACT_TITLE_PDF_DIR):
+        os.makedirs(EXTRACT_TITLE_PDF_DIR)
+    mapping_file = open(txtpath, "r")
+    line_1st = mapping_file.readline()
+    while True:
+        # 根据读取下一行的长度，判断循环结束条件
+        if len(line_1st) < 1:
+            break
+        line_2nd = mapping_file.readline()
+        rep = re.compile(r'\t')
+        (fields1st) = rep.split(line_1st)
+        startpage = int(fields1st[2])
+        if len(line_2nd) < 1:
+            # 说明到达最后一行
+            endpage = startpage + 1
+        else:
+            (fields2nd) = rep.split(line_2nd)
+            endpage = int(fields2nd[2])
+        if endpage < startpage:
+            # 多本书同时拆分的情况:到达单本书的末尾
+            endpage = startpage + 1
+        line_1st = line_2nd
+        # print fields1st[1] + "\t" + str(startpage) + "\t" + str(endpage)
+        genfile(PDFDIR + (fields1st[0]).decode("utf-8").encode("gbk") + '.pdf',
+                EXTRACT_TITLE_PDF_DIR + fields1st[0].encode("gbk") + "\\" + del_blank_char(fields1st[3]) + '.pdf',
+                startpage, endpage)
+
+
+def extract_month(txtpath):
+    """
+    根据prc_month.txt的结果按月份拆分
+    :param txtpath:
+    :return:
+    """
+    if not os.path.exists(EXTRACT_MONTH_PDF_DIR):
+        os.makedirs(EXTRACT_MONTH_PDF_DIR)
+    mapping_file = open(txtpath, "r")
+    line_1st = mapping_file.readline()
+    while True:
+        # 根据读取下一行的长度，判断循环结束条件
+        if len(line_1st) < 1:
+            break
+        line_2nd = mapping_file.readline()
+        rep = re.compile(r'\t')
+        (fields1st) = rep.split(line_1st)
+        startpage = int(fields1st[2])
+        if len(line_2nd) < 1:
+            # 说明到达最后一行
+            endpage = GetPdfpages(PDFDIR+(fields1st[0]).encode("gbk")+".pdf")
+        else:
+            (fields2nd) = rep.split(line_2nd)
+            endpage = int(fields2nd[2])
+        if endpage < startpage:
+            # 多本书同时拆分的情况:到达单本书的末尾
+            endpage = GetPdfpages(PDFDIR+(fields1st[0]).encode("gbk")+".pdf")
+        line_1st = line_2nd
+        # print fields1st[1] + "\t" + str(startpage) + "\t" + str(endpage)
+        genfile(PDFDIR + (fields1st[0]).decode("utf-8").encode("gbk") + '.pdf',
+                EXTRACT_MONTH_PDF_DIR + fields1st[0].encode("gbk") + "\\" + fields1st[1].encode('gbk') + '.pdf',
+                startpage, endpage-1)
+
+
+
+def get_jpg_from_swf(srcdir, desdir):
+    """
+    提取swf中的图片:如果提取出来的图片是分片的，可以使用Adobe Acrobat Pro 进行提取
+    :param srcdir:
+    :param desdir:
+    :return:
+    """
+    os.chdir(srcdir)
+    pagenum = 1
+    while True:
+        filename = `pagenum` + '.swf'
+        print srcdir + "\\" + filename
+        if not os.path.exists(srcdir + "\\" + filename):
+            break
+        elif pagenum > 2000:
+            break
+        os.system(ROOTDIR + '\\swfextract.exe ' + filename + ' >' + ROOTDIR + '\\temp.txt')
+        fields = getjpg_grid(ROOTDIR + '\\temp.txt')
+        if fields == 'NULL':
+            pagenum = pagenum + 1
+            continue
+        for i in range(0, len(fields)):
+            if not os.path.exists(desdir):
+                os.makedirs(desdir)
+            os.system(ROOTDIR + '\\swfextract.exe -j' + `int(
+                fields[i])` + ' ' + filename + ' -o ' + desdir + "\\" + `pagenum` + '-' + `i` + '.jpg')
+            if os.path.getsize(desdir + "\\" + `pagenum` + '-' + `i` + '.jpg') < 20000:
+                print desdir + "\\" + `pagenum` + '-' + `i` + '.jpg,图片小于20k，被自动删除'
+                os.remove(desdir + "\\" + `pagenum` + '-' + `i` + '.jpg')
+        os.remove(ROOTDIR + '\\temp.txt')
+        pagenum = pagenum + 1
+
+
+def getjpg_grid(logtxt):
+    """
+    通过swf获取图片信息
+    :param logtxt:
+    :return:
+    """
+    fp = open(logtxt, 'r+')
+    rep = re.compile(r',')
+    while True:
+        content = fp.readline().strip()
+        if len(content) < 2:
+            break
+        if content.find('[-j]') > -1:
+            items = content[content.index('ID(s)') + 5:]
+            (fields) = rep.split(items)
+            fp.close()
+            return fields
+    return 'NULL'
+
+
+def make_swf_from_pdf(filename, fileid):
+    """
+    pdf文件转换为swf文件
+    :param filename:
+    :param fileid:
+    :return:
+    """
+    desdir = SWFDIR + fileid + '\\'
+    if not os.path.exists(desdir):
+        os.makedirs(desdir)
+    total_page = GetPdfpages(filename)
+    print total_page
+    for i in range(1, total_page + 1):
+        os.system(
+            'p2s.lib -s flashversion=9 -f -s languagedir=\"' + XPDFDIR + '\\chinese-simplified\"  -s jpegquality=70 -p ' + `i` + '-' + `i` + ' \"' + filename + '\" -o \"' + desdir + '\\' + `i` + '.swf\"')
+
+
+def get_picture_mapping(srcdir, mapping_file):
+    """
+    遍历生成图片目录：生成图书ID+图片原始名字的文件
+    :return:
+    """
+    fp = open(mapping_file, "a+")
+    files = os.listdir(srcdir)
+    for file in files:
+        newpath = srcdir + "\\" + file
+        fileslist = os.listdir(newpath)
+        fileslist.sort(key=lambda x: int(x[:-6]))
+        for f in fileslist:
+            print >> fp, file, "\t", f
+    print "统计完毕"
+
+
+# 批量整合数据
+def batch_get_all_txt_files(ocr_file_path, dest_file_path):
+    """
+    批量提取ocr识别txt的文件
+    :param ocr_file_path:
+    :param dest_file_path:
+    :return:
+    """
+    if not os.path.isdir(ocr_file_path):
+        print "参数错误，请输入合法路径"
+        return
+    for filepath in os.listdir(ocr_file_path):
+        # print filepath.decode("gbk")
+        filepath = os.path.join(ocr_file_path, filepath)
+        if not os.path.isdir(filepath):
+            continue
+        getAllTxtFiles(os.path.join(filepath, "*.TXT"), dest_file_path)
+
+
+def batch_extract_title(txtpath):
+    """
+    批量拆分标题，并记录页码
+    :param txtpath:
+    :return:
+    """
+    if not os.path.isdir(txtpath):
+        print "参数错误，请输入合法路径"
+        return
+    for filepath in os.listdir(txtpath):
+        filepath = os.path.join(txtpath, filepath)
+        if not os.path.isdir(filepath):
+            continue
+        getBookID_Title_Page_Mapping(filepath)
+
+
+
+
+# 将拆分目录组合为[拆分目录].pdf,通过OCR图像识别得到拆分目录对应的txt文档，进行分析
+
+def main():
+    """
+    调用处理函数入口
+    注意OCR识别后文本的校审，会有识别不准确的情况存在
+    :return:
+    """
+
+    """
+    模块测试
+      按照月份拆分计算页码新起一页
+      按照标题拆分计算页码在当前页
+    """
+    # getAllTxtFiles(u"../DealResource/53年卷国史/*.TXT",u"../DealResult")
+    # getBookID_Title_Page_Mapping(u"../DealResult/53年卷国史")
+    # pages = GetPdfpages("D:\\Python_PRC_Resource\\DealResource\\50年卷国史.pdf".decode("utf-8").encode("gbk"))
+    # print pages
+    # compute_start_end_mapping("Book_Title_Page_Mapping_GUID.txt")
+    # genfile("PDF\\50年卷国史.pdf".decode("utf-8").encode("gbk"),"extractTitlePDF\\1.pdf",8,9)
+    # make_swf_from_pdf("D:\\Python_PRC_Resource\\DealResource\\50年卷国史.pdf".decode("utf-8").encode("gbk"),"1")
+    # get_jpg_from_swf("D:\\Python_PRC_Resource\\Script\\SWF\\40245\\tags",JPGDIR+"\\40245")
+    # get_picture_mapping("D:\Python_PRC_Resource\Script\JPG","Picture_Mapping.txt")
+
+    """
+    流程作业：
+        标题提取
+            1 提取OCR处理的TXT文本，并进行转码操作
+            2 从TXT文本中拆分标题,并记录页码（进行校对，并修改出错的文件，重复进行1-2步操作）
+            3 生成GUID[使用Java程序]
+            4 动态计算偏移并拆分数据(准备数据：将全本PDF存放到PDF目录下，以备切分)
+        图片提取
+            1 切分PDF转换为swf
+            2 从swf中提取图片
+            3 将图片信息保存
+    """
+    # batch_get_all_txt_files("D:/Python_PRC_Resource/DealResource/OCRFiles",u"../DealResult")
+    # batch_extract_title("D:/Python_PRC_Resource/DealResult")
+    # compute_start_end_mapping("Book_Title_Page_Mapping_GUID.txt")
+    # extract_month("prc-month.txt")
+
+
+if __name__ == '__main__':
+    # python str 使用Ascii编码的
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+    main()

@@ -12,6 +12,7 @@ ROOTDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 XPDFDIR = ROOTDIR + '\\xpdf'
 EXTRACT_TITLE_PDF_DIR = ROOTDIR + "\\extractTitlePDF\\"
 EXTRACT_MONTH_PDF_DIR = ROOTDIR + "\\extractMonthPDF\\"
+EXTRACT_SECTION_PDF_DIR = ROOTDIR + "\\extractSectionPDF\\"
 PDFDIR = ROOTDIR + "\\PDF\\"
 SWFDIR = ROOTDIR + "\\SWF\\"
 JPGDIR = ROOTDIR + "\\JPG\\"
@@ -288,19 +289,258 @@ def extract_month(txtpath):
         startpage = int(fields1st[2])
         if len(line_2nd) < 1:
             # 说明到达最后一行
-            endpage = GetPdfpages(PDFDIR+(fields1st[0]).encode("gbk")+".pdf")
+            endpage = GetPdfpages(PDFDIR + (fields1st[0]).encode("gbk") + ".pdf")
         else:
             (fields2nd) = rep.split(line_2nd)
             endpage = int(fields2nd[2])
         if endpage < startpage:
             # 多本书同时拆分的情况:到达单本书的末尾
-            endpage = GetPdfpages(PDFDIR+(fields1st[0]).encode("gbk")+".pdf")
+            endpage = GetPdfpages(PDFDIR + (fields1st[0]).encode("gbk") + ".pdf")
         line_1st = line_2nd
         # print fields1st[1] + "\t" + str(startpage) + "\t" + str(endpage)
         genfile(PDFDIR + (fields1st[0]).decode("utf-8").encode("gbk") + '.pdf',
                 EXTRACT_MONTH_PDF_DIR + fields1st[0].encode("gbk") + "\\" + fields1st[1].encode('gbk') + '.pdf',
-                startpage, endpage-1)
+                startpage, endpage - 1)
 
+
+def stripchapter(srcstr):
+    """
+    获得章节信息及章节偏移量
+    :param srcstr:
+    :return:
+    """
+    numdic = []
+    p = re.compile(r'\d+')
+    rep = re.compile(r'第(.*)编')
+    match = rep.search(srcstr)
+    if not match:
+        # 说明不是编目，有页码
+        # 提取每一行中的数字信息（页码），3章 4节 【考虑图书编号跟页码有冲突】
+        for m in p.finditer(srcstr):
+            numdic = numdic + [m.group()]
+        if len(numdic) > 1:
+            pagenum = numdic[len(numdic) - 1]
+            bookno = numdic[0]
+            # 获取（章、节）标题
+            srcstr = srcstr[srcstr.index(bookno) + len(bookno):]
+            srcstr = srcstr[:srcstr.index(pagenum)]
+            if srcstr.find('.') > -1:
+                srcstr = srcstr[:srcstr.index('.')]
+            rep = re.compile(r'第(.*)章')
+            match = rep.search(srcstr)
+            if match:
+                chapter = match.group(0)
+                ChapterName = srcstr.strip('\t').replace(' ', '')
+                write_mapping_log("ChapterName_Mapping.txt", bookno + "\t" + ChapterName + "\t" + pagenum + "\n")
+
+
+def get_chapter_mapping(txt):
+    """
+    通过整理的章节目录条目提取章节信息及拆分偏移
+    :param txt:
+    :return:
+    """
+    f = open(txt, "r")
+    while True:
+        line = f.readline().strip('﻿')
+        if len(line) < 2:
+            break
+        stripchapter(line)
+
+
+def stripsection(srcstr):
+    """
+    获得节信息及节偏移量
+    :param srcstr:
+    :return:
+    """
+    numdic = []
+    p = re.compile(r'\d+')
+    rep = re.compile(r'第(.*)编')
+    match = rep.search(srcstr)
+    if not match:
+        # 说明不是编目，有页码
+        # 提取每一行中的数字信息（页码），3章 4节 【考虑图书编号跟页码有冲突】
+        for m in p.finditer(srcstr):
+            numdic = numdic + [m.group()]
+        if len(numdic) > 1:
+            pagenum = numdic[len(numdic) - 1]
+            bookno = numdic[0]
+            # 获取（章、节）标题
+            srcstr = srcstr[srcstr.index(bookno) + len(bookno):]
+            srcstr = srcstr[:srcstr.index(pagenum)]
+            if srcstr.find('.') > -1:
+                srcstr = srcstr[:srcstr.index('.')]
+            rep = re.compile(r'第(.*)节')
+            match = rep.search(srcstr)
+            if match:
+                section = match.group(0)
+                sectionName = srcstr.strip('\t').replace(' ', '')
+                write_mapping_log("SectionName_Mapping.txt", bookno + "\t" + sectionName + "\t" + pagenum + "\n")
+
+
+def get_section_mapping(txt):
+    """
+    通过整理的章节目录条目提取章节信息及拆分偏移
+    :param txt:
+    :return:
+    """
+    f = open(txt, "r")
+    while True:
+        line = f.readline().strip('﻿')
+        if len(line) < 2:
+            break
+        stripsection(line)
+
+
+def stripappendix(srcstr):
+    """
+    获得附录信息及节偏移量
+    :param srcstr:
+    :return:
+    """
+    numdic = []
+    p = re.compile(r'\d+')
+    rep = re.compile(r'第(.*)编')
+    match = rep.search(srcstr)
+    if not match:
+        # 说明不是编目，有页码
+        # 提取每一行中的数字信息（页码），3章 4节 【考虑图书编号跟页码有冲突】
+        for m in p.finditer(srcstr):
+            numdic = numdic + [m.group()]
+        if len(numdic) > 1:
+            pagenum = numdic[len(numdic) - 1]
+            bookno = numdic[0]
+            # 获取（章、节）标题
+            srcstr = srcstr[srcstr.index(bookno) + len(bookno):]
+            srcstr = srcstr[:srcstr.index(pagenum)]
+            if srcstr.find('.') > -1:
+                srcstr = srcstr[:srcstr.index('.')]
+            rep = re.compile(r'附录')
+            match = rep.search(srcstr)
+            if match:
+                appendix = match.group(0)
+                appendixName = srcstr.strip('\t').replace(' ', '')
+                write_mapping_log("AppendixName_Mapping.txt", bookno + "\t" + appendixName + "\t" + pagenum + "\n")
+
+
+def get_appendix_mapping(txt):
+    """
+    通过整理的章节目录条目提取附录信息及拆分偏移
+    :param txt:
+    :return:
+    """
+    f = open(txt, "r")
+    while True:
+        line = f.readline().strip('﻿')
+        if len(line) < 2:
+            break
+        stripappendix(line)
+
+
+def get_chapter_section_mapping(txt):
+    """
+    获得章节跟目录的mapping信息
+    :param txt:
+    :return:
+    """
+    f = open(txt, "r")
+    while True:
+        line = f.readline().strip('﻿')
+        if len(line) < 2:
+            break
+        strip_chapter_section(line)
+
+
+def strip_chapter_section(srcstr):
+    """
+    获取chapter_section的mapping信息
+    :param srcstr:
+    :return:
+    """
+    numdic = []
+    p = re.compile(r'\d+')
+    rep = re.compile(r'第(.*)编')
+    match = rep.search(srcstr)
+    if not match:
+        # 说明不是编目，有页码
+        # 提取每一行中的数字信息（页码），3章 4节 【考虑图书编号跟页码有冲突】
+        for m in p.finditer(srcstr):
+            numdic = numdic + [m.group()]
+        if len(numdic) > 1:
+            pagenum = numdic[len(numdic) - 1]
+            bookno = numdic[0]
+            # 获取（章、节）标题
+            srcstr = srcstr[srcstr.index(bookno) + len(bookno):]
+            srcstr = srcstr[:srcstr.index(pagenum)]
+            if srcstr.find('.') > -1:
+                srcstr = srcstr[:srcstr.index('.')]
+            # 获取章信息
+            rep_chapter = re.compile(r'第(.*)章')
+            match_chapter = rep_chapter.search(srcstr)
+            # 获取节信息
+            rep_section = re.compile(r'第(.*)节')
+            match_section = rep_section.search(srcstr)
+            global ChapterName
+            global flag
+            if match_chapter:
+                ChapterName = srcstr.strip('\t').replace(' ', '')
+                flag = 1
+            elif match_section:
+                sectionName = srcstr.strip('\t').replace(' ', '')
+                # print bookno + "\t" + ChapterName + "\t" + sectionName + "\t" + pagenum + "\t" + str(flag)
+                write_mapping_log("ChapterName_SectionName_Mappting.txt",
+                                  bookno + "\t" + ChapterName + "\t" + sectionName + "\t" + pagenum + "\t" + str(
+                                      flag) + "\n")
+                flag = 0
+
+
+def compute_section_offset(txtpath):
+    """
+    根据获得的ChapterName_SectionName_Mappting.txt获得小节的start跟end页码
+    其实这种情况也不是非常准确，也存在偏差，偏差原因是恰好节与节之间是另起一页（少）
+    :param txtpath:
+    :return:
+    """
+    if not os.path.exists(EXTRACT_SECTION_PDF_DIR):
+        os.makedirs(EXTRACT_SECTION_PDF_DIR)
+    mapping_file = open(txtpath, "r")
+    line_1st = mapping_file.readline()
+    while True:
+        # 根据读取下一行的长度，判断循环结束条件
+        if len(line_1st) < 1:
+            break
+        line_2nd = mapping_file.readline()
+        rep = re.compile(r'\t')
+        (fields1st) = rep.split(line_1st)
+        startpage = int(fields1st[3])
+        if len(line_2nd) < 1:
+            # 说明到达最后一行
+            endpage = GetPdfpages(PDFDIR + (fields1st[0]).encode("gbk") + ".pdf")
+        else:
+            (fields2nd) = rep.split(line_2nd)
+            if int(fields2nd[4]) == 1:
+                endpage = int(fields2nd[3]) - 1
+            else:
+                endpage = int(fields2nd[3])
+        if endpage < startpage:
+            # 多本书同时拆分的情况:到达单本书的末尾
+            endpage = GetPdfpages(PDFDIR + (fields1st[0]).encode("gbk") + ".pdf")
+        line_1st = line_2nd
+        # print fields1st[1] + "_" + fields1st[2] + "\t" + str(startpage) + "\t" + str(endpage)
+        genfile(PDFDIR + (fields1st[0]).decode("utf-8").encode("gbk") + '.pdf',
+                EXTRACT_SECTION_PDF_DIR + fields1st[0].encode("gbk") + "\\" + fields1st[1].encode("gbk") + "\\" + fields1st[2].encode('gbk') + '.pdf',
+                startpage, endpage)
+
+
+def get_integration_info(txt):
+    """
+    获取整合信息：节（旧页）、章、绪论、后记、结束语、附录（新页）
+    此功能只是让拆分信息更加全面（不只是章节，还有绪论、后记、结束语、附录信息添加进来）
+    :param txt:
+    :return:
+    """
+    pass
 
 
 def get_jpg_from_swf(srcdir, desdir):
@@ -424,8 +664,6 @@ def batch_extract_title(txtpath):
         getBookID_Title_Page_Mapping(filepath)
 
 
-
-
 # 将拆分目录组合为[拆分目录].pdf,通过OCR图像识别得到拆分目录对应的txt文档，进行分析
 
 def main():
@@ -449,6 +687,12 @@ def main():
     # make_swf_from_pdf("D:\\Python_PRC_Resource\\DealResource\\50年卷国史.pdf".decode("utf-8").encode("gbk"),"1")
     # get_jpg_from_swf("D:\\Python_PRC_Resource\\Script\\SWF\\40245\\tags",JPGDIR+"\\40245")
     # get_picture_mapping("D:\Python_PRC_Resource\Script\JPG","Picture_Mapping.txt")
+    # get_chapter_mapping("ModernChina.txt")
+    # get_section_mapping("ModernChina.txt")
+    # get_appendix_mapping("ModernChina.txt")
+    # get_chapter_section_mapping("ModernChina.txt")
+    # compute_section_offset("test.txt")
+    # genfile("PDF\\40177.pdf","PDF\\40177_1.pdf",50,571)
 
     """
     流程作业：
@@ -461,6 +705,13 @@ def main():
             1 切分PDF转换为swf
             2 从swf中提取图片
             3 将图片信息保存
+        章节拆分
+            1 通过OCR处理获得所有的目录TXT文本，并进行转码操作（必要时加入人工整理）
+            2 从TXT文本中拆分章，并记录页码（章-章（另起一页）start - [end-1]）
+            3 从TXT文本中拆分节，并记录页码（节-节（同一页）start - end）
+            4 计算偏移并拆分数据
+        注意genfile后边的参数endpage什么时候-1操作
+        注意目录偏移的计算要准确，有的包含别的编目，注意真正开始的位置是其下标开始的位置
     """
     # batch_get_all_txt_files("D:/Python_PRC_Resource/DealResource/OCRFiles",u"../DealResult")
     # batch_extract_title("D:/Python_PRC_Resource/DealResult")

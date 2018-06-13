@@ -529,7 +529,8 @@ def compute_section_offset(txtpath):
         line_1st = line_2nd
         # print fields1st[1] + "_" + fields1st[2] + "\t" + str(startpage) + "\t" + str(endpage)
         genfile(PDFDIR + (fields1st[0]).decode("utf-8").encode("gbk") + '.pdf',
-                EXTRACT_SECTION_PDF_DIR + fields1st[0].encode("gbk") + "\\" + fields1st[1].encode("gbk") + "\\" + fields1st[2].encode('gbk') + '.pdf',
+                EXTRACT_SECTION_PDF_DIR + fields1st[0].encode("gbk") + "\\" + fields1st[1].encode("gbk") + "\\" +
+                fields1st[2].encode('gbk') + '.pdf',
                 startpage, endpage)
 
 
@@ -541,6 +542,25 @@ def get_integration_info(txt):
     :return:
     """
     pass
+
+
+def get_section_title():
+    """
+    从节标题中取出标题信息
+    :return:
+    """
+    with open("ChapterName_SectionName_Mappting.txt") as f:
+        reg = re.compile(r"\t")
+        while True:
+            line = f.readline()
+            if len(line) < 1:
+                break
+            section = reg.split(line)[2]
+            reg_title = re.compile(r"第(.*?)节(.*)")
+            match =  reg_title.search(section)
+            if match:
+                title = match.group(2)
+                write_mapping_log("section_title.txt",title+"\n")
 
 
 def get_jpg_from_swf(srcdir, desdir):
@@ -693,6 +713,8 @@ def main():
     # get_chapter_section_mapping("ModernChina.txt")
     # compute_section_offset("test.txt")
     # genfile("PDF\\40177.pdf","PDF\\40177_1.pdf",50,571)
+    # get_section_title()
+
 
     """
     流程作业：
